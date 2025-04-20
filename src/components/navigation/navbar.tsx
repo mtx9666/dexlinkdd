@@ -2,58 +2,144 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { cn } from '@/lib/utils';
-import { useState, useEffect } from 'react';
+import { WalletConnect } from '@/components/wallet/wallet-connect';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { ChevronDown, Menu } from 'lucide-react';
+import { useState } from 'react';
 
 const navigation = [
-  { name: 'Trade', href: '/trade' },
-  { name: 'Portfolio', href: '/portfolio' },
-  { name: 'Social', href: '/social' },
-  { name: 'Settings', href: '/settings' },
+  {
+    name: 'Trading',
+    items: [
+      { name: 'Trade', href: '/trade' },
+      { name: 'Portfolio', href: '/portfolio' },
+      { name: 'Market Analysis', href: '/market-analysis' },
+      { name: 'Automated Investing', href: '/automated-investing' },
+    ],
+  },
+  {
+    name: 'Trading Bots',
+    items: [
+      { name: 'Bot Marketplace', href: '/bots-marketplace' },
+      { name: 'My Bots', href: '/my-bots' },
+      { name: 'Bot Analytics', href: '/bot-analytics' },
+    ],
+  },
+  {
+    name: 'Social',
+    items: [
+      { name: 'Social Feed', href: '/social' },
+      { name: 'Profile', href: '/profile' },
+    ],
+  },
+  {
+    name: 'Settings',
+    items: [
+      { name: 'Settings', href: '/settings' },
+      { name: 'Help', href: '/help' },
+    ],
+  },
 ];
 
 export function Navbar() {
   const pathname = usePathname();
-  const [mounted, setMounted] = useState(false);
-
-  // Only show the UI after mounting to avoid hydration errors
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <nav className="fixed top-0 z-50 w-full border-b border-gray-800 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <nav className="fixed top-0 z-50 w-full border-b bg-background">
+      <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
-          <div className="flex items-center">
-            <Link href="/" className="flex items-center">
-              <span className="text-xl font-bold text-primary">Dexlink</span>
+          <div className="flex items-center space-x-6">
+            <Link href="/" className="text-xl font-bold text-primary hover:text-primary/90 transition-colors font-clash-display tracking-tight">
+              Dexlink
             </Link>
-            <div className="hidden md:block">
-              <div className="ml-10 flex items-baseline space-x-4">
-                {navigation.map((item) => (
+            <div className="hidden md:flex md:space-x-4">
+              {navigation.map((group) => (
+                <DropdownMenu key={group.name}>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className={cn(
+                        'text-sm font-medium transition-colors hover:text-primary',
+                        pathname.startsWith(`/${group.name.toLowerCase()}`)
+                          ? 'text-foreground'
+                          : 'text-muted-foreground'
+                      )}
+                    >
+                      {group.name}
+                      <ChevronDown className="ml-1 h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    {group.items.map((item) => (
+                      <DropdownMenuItem key={item.href} asChild>
+                        <Link
+                          href={item.href}
+                          className={cn(
+                            'w-full',
+                            pathname === item.href
+                              ? 'text-foreground'
+                              : 'text-muted-foreground'
+                          )}
+                        >
+                          {item.name}
+                        </Link>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center space-x-4">
+            <WalletConnect />
+            <Button
+              variant="ghost"
+              className="md:hidden"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              <Menu className="h-6 w-6" />
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile menu */}
+      {mobileMenuOpen && (
+        <div className="md:hidden">
+          <div className="space-y-1 px-4 pb-3 pt-2">
+            {navigation.map((group) => (
+              <div key={group.name} className="space-y-1">
+                <div className="px-3 py-2 text-sm font-medium text-muted-foreground">
+                  {group.name}
+                </div>
+                {group.items.map((item) => (
                   <Link
-                    key={item.name}
+                    key={item.href}
                     href={item.href}
                     className={cn(
+                      'block px-3 py-2 text-sm',
                       pathname === item.href
-                        ? 'bg-gray-900 text-white'
-                        : 'text-gray-300 hover:bg-gray-700 hover:text-white',
-                      'rounded-md px-3 py-2 text-sm font-medium'
+                        ? 'text-foreground'
+                        : 'text-muted-foreground hover:text-foreground'
                     )}
+                    onClick={() => setMobileMenuOpen(false)}
                   >
                     {item.name}
                   </Link>
                 ))}
               </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            {mounted && <ConnectButton />}
+            ))}
           </div>
         </div>
-      </div>
+      )}
     </nav>
   );
 } 

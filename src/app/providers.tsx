@@ -1,10 +1,14 @@
 'use client';
 
-import { getDefaultWallets, RainbowKitProvider } from '@rainbow-me/rainbowkit';
+import { ThemeProvider } from 'next-themes';
+import { RainbowKitProvider, getDefaultWallets, darkTheme, connectorsForWallets } from '@rainbow-me/rainbowkit';
 import { configureChains, createConfig, WagmiConfig } from 'wagmi';
 import { mainnet, sepolia } from 'wagmi/chains';
 import { publicProvider } from 'wagmi/providers/public';
-import { ThemeProvider } from 'next-themes';
+import { phantomWallet } from '@rainbow-me/rainbowkit/wallets';
+import '@rainbow-me/rainbowkit/styles.css';
+import { useState, useEffect } from 'react';
+import { WalletProvider } from "@/contexts/wallet-context"
 
 // Configure chains and providers
 const { chains, publicClient } = configureChains(
@@ -12,39 +16,65 @@ const { chains, publicClient } = configureChains(
   [publicProvider()]
 );
 
-// Check if WalletConnect project ID is available
-const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID;
-if (!projectId) {
-  console.warn('WalletConnect project ID is not set. Some wallet connections may not work properly.');
-}
-
 // Configure wallet connectors
-const { connectors } = getDefaultWallets({
-  appName: 'Dexlink Social Trading',
-  projectId: projectId || 'YOUR_PROJECT_ID', // Use a fallback for development
+const { wallets } = getDefaultWallets({
+  appName: 'Dexlink',
+  projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'development_test_project_id_123456789',
   chains,
 });
 
+// Add additional wallets
+const connectors = connectorsForWallets([
+  ...wallets,
+  {
+    groupName: 'Other',
+    wallets: [
+      phantomWallet({ chains }),
+    ],
+  },
+]);
+
 // Create wagmi config
-const wagmiConfig = createConfig({
+const config = createConfig({
   autoConnect: true,
-  connectors,
   publicClient,
+  connectors,
 });
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-background text-foreground">
+        <div className="text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
   return (
-    <WagmiConfig config={wagmiConfig}>
-      <RainbowKitProvider 
-        chains={chains}
-        coolMode
-        showRecentTransactions={true}
-        initialChain={sepolia} // Use testnet by default for development
+    <WagmiConfig config={config}>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="system"
+        enableSystem
+        disableTransitionOnChange
       >
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-          {children}
-        </ThemeProvider>
-      </RainbowKitProvider>
+        <WalletProvider>
+          <RainbowKitProvider
+            chains={chains}
+            coolMode
+            showRecentTransactions={true}
+            theme={darkTheme()}
+          >
+            {children}
+          </RainbowKitProvider>
+        </WalletProvider>
+      </ThemeProvider>
     </WagmiConfig>
   );
 } 

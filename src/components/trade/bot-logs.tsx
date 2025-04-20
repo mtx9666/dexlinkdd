@@ -16,6 +16,7 @@ export function BotLogs() {
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
   const socketRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -141,6 +142,16 @@ export function BotLogs() {
     }
   }, [isConnected]);
 
+  // Set mounted state after hydration
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Don't render until after hydration
+  if (!mounted) {
+    return null;
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -197,7 +208,7 @@ export function BotLogs() {
               }`}
             >
               <span className="mr-2 text-gray-500">
-                {new Date(log.timestamp).toLocaleTimeString()}
+                {mounted ? new Date(log.timestamp).toLocaleTimeString() : '12:00:00'}
               </span>
               <span>{log.message}</span>
             </div>
